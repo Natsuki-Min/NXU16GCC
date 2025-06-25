@@ -28,3 +28,4 @@ extern int  nxu16_regno_mode_ok_for_base_p (int regno, machine_mode mode,bool st
 extern bool nxu16_epilogue_uses (unsigned int regno);
 extern  void nxu16_asm_out_dtor (rtx symbol, int priority);
 extern  void nxu16_asm_out_ctor (rtx symbol, int priority);
+extern  void	nxu16_register_pragmas (void);

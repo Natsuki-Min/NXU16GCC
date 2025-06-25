@@ -183,7 +183,7 @@ const char *mips_reg_names[]=REGISTER_NAMES;
   rtx insn;
 
   nxu16_compute_frame();
-  if(!crtl->is_leaf){      insn = emit_insn(gen_pushqi1(gen_rtx_REG(QImode, nxu16_LR))); //todo:use correct mode
+  if(!crtl->is_leaf){      insn = emit_insn(gen_pushsi1(gen_rtx_REG(SImode, nxu16_LR))); 
       RTX_FRAME_RELATED_P(insn) = 1;}
   /*
     insn = emit_insn (gen_movhi_push (hard_frame_pointer_rtx));
@@ -191,17 +191,73 @@ const char *mips_reg_names[]=REGISTER_NAMES;
 
   if (flag_stack_usage_info)
     current_function_static_stack_size = cfun -> machine -> size_for_adjusting_sp;
-
-  /* Save callee-saved registers.  */
-  for (regno = FIRST_PSEUDO_REGISTER - 1; regno >= 0; regno--) //FIXME: may use er12 r11 er8 like this 
-  {
-    if (df_regs_ever_live_p(regno) &&
-      !call_used_or_fixed_reg_p(regno)) {
-      printf("regno:%d live:%s call:%s",regno,df_regs_ever_live_p(regno)? "true" : "false",call_used_or_fixed_reg_p(regno)? "true" : "false");
-      insn = emit_insn(gen_pushqi1(gen_rtx_REG(QImode, regno))); //todo:use peephole to combine them
-      RTX_FRAME_RELATED_P(insn) = 1;
+/* Save callee-saved registers - hardcoded version */
+int lowest_reg = 16;
+for (regno = FIRST_PSEUDO_REGISTER - 1; regno >= 0; regno--) {
+    if (df_regs_ever_live_p(regno) && !call_used_or_fixed_reg_p(regno)) {
+        lowest_reg = regno;
     }
-  }
+}///FIXME: may use er12 r11 er8 like this ,also,may use non general reg
+
+if (lowest_reg < 16) {
+    switch (lowest_reg) {
+
+            
+        case 4: case 5:
+                    /* Push DI for r8-r15 if needed */
+                insn = emit_insn(gen_pushdi1(gen_rtx_REG(DImode, 8)));
+                RTX_FRAME_RELATED_P(insn) = 1;
+            /* Push SI for r4-r7 */
+            insn = emit_insn(gen_pushsi1(gen_rtx_REG(SImode, 4)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+
+            
+            break;
+            
+        case 6: case 7:
+                    /* Push DI for r8-r15 if needed */
+                insn = emit_insn(gen_pushdi1(gen_rtx_REG(DImode, 8)));
+                RTX_FRAME_RELATED_P(insn) = 1;
+            /* Push HI for r6-r7 */
+            insn = emit_insn(gen_pushhi1(gen_rtx_REG(HImode, 6)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+
+            
+            break;
+            
+        case 8: case 9:
+            /* Push DI for r8-r15 */
+            insn = emit_insn(gen_pushdi1(gen_rtx_REG(DImode, 8)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            break;
+            
+        case 10: case 11:
+                    /* Push SI for r12-r15 */
+            insn = emit_insn(gen_pushsi1(gen_rtx_REG(SImode, 12)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            /* Push HI for r10-r11 */
+            insn = emit_insn(gen_pushhi1(gen_rtx_REG(HImode, 10)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+
+            break;
+            
+        case 12: case 13:
+            /* Push SI for r12-r15 */
+            insn = emit_insn(gen_pushsi1(gen_rtx_REG(SImode, 12)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            break;
+            
+        case 14: case 15:
+            /* Push HI for r14-r15 */
+            insn = emit_insn(gen_pushhi1(gen_rtx_REG(HImode, 14)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            break;
+            
+         default:
+         gcc_unreachable();
+         break;
+    }
+}
   if (frame_pointer_needed) {//FIXME:may change sp but not use fp?idk
     insn = emit_move_insn(hard_frame_pointer_rtx, stack_pointer_rtx);
     RTX_FRAME_RELATED_P(insn) = 1;
@@ -273,12 +329,71 @@ nxu16_expand_epilogue(void) {
     insn = emit_move_insn(stack_pointer_rtx, hard_frame_pointer_rtx);
     RTX_FRAME_RELATED_P(insn) = 1;
   }
-  for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++) {
+int lowest_reg = 16;
+for (regno = FIRST_PSEUDO_REGISTER-1; regno >=0; regno--) {
     if (df_regs_ever_live_p(regno) && !call_used_or_fixed_reg_p(regno)) {
-      insn = emit_insn(gen_popqi1(gen_rtx_REG(QImode, regno))); 
-      RTX_FRAME_RELATED_P(insn) = 1;
+        lowest_reg = regno;
     }
-  }
+}
+
+if (lowest_reg <16) {
+    switch (lowest_reg) {
+
+            
+        case 4: case 5:
+                    /* Pop SI for r4-r7 */
+            insn = emit_insn(gen_popsi1(gen_rtx_REG(SImode, 4)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            /* Pop DI for r8-r15 if needed */
+
+                insn = emit_insn(gen_popdi1(gen_rtx_REG(DImode, 8)));
+                RTX_FRAME_RELATED_P(insn) = 1;
+            
+
+            break;
+            
+        case 6: case 7:
+                    /* Pop HI for r6-r7 */
+            insn = emit_insn(gen_pophi1(gen_rtx_REG(HImode, 6)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            /* Pop DI for r8-r15 if needed */
+                insn = emit_insn(gen_popdi1(gen_rtx_REG(DImode, 8)));
+                RTX_FRAME_RELATED_P(insn) = 1;
+            
+
+            break;
+            
+        case 8: case 9:
+            /* Pop DI for r8-r15 */
+            insn = emit_insn(gen_popdi1(gen_rtx_REG(DImode, 8)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            break;
+            
+        case 10: case 11:
+                    /* Pop HI for r10-r11 */
+            insn = emit_insn(gen_pophi1(gen_rtx_REG(HImode, 10)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            /* Pop SI for r12-r15 */
+            insn = emit_insn(gen_popsi1(gen_rtx_REG(SImode, 12)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+
+            break;
+            
+        case 12: case 13:
+            /* Pop SI for r12-r15 */
+            insn = emit_insn(gen_popsi1(gen_rtx_REG(SImode, 12)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            break;
+            
+        case 14: case 15:
+            /* Pop HI for r14-r15 */
+            insn = emit_insn(gen_pophi1(gen_rtx_REG(HImode, 14)));
+            RTX_FRAME_RELATED_P(insn) = 1;
+            break;
+           default:
+           gcc_unreachable();
+    }
+}
 
   if (cfun->machine->interrupt_handler_p)
     emit_jump_insn (gen_iret ());
@@ -313,11 +428,15 @@ nxu16_hard_regno_mode_ok(unsigned int regno, machine_mode mode) {
 }
 
 /* Implements the macro INITIAL_ELIMINATION_OFFSET, return the OFFSET.  */
-
+static bool
+nxu16_can_eliminate (const int from ATTRIBUTE_UNUSED, const int to)
+{
+  return ((to == HARD_FRAME_POINTER_REGNUM && frame_pointer_needed) || to == STACK_POINTER_REGNUM);
+}
 int
 nxu16_initial_elimination_offset(int from, int to)
 {
-  int i = cfun -> machine -> callee_saved_reg_size, regno;
+  int i = cfun -> machine -> callee_saved_reg_size;
   /*for (regno = FIRST_PSEUDO_REGISTER - 1; regno >= 0; regno--) {
     if (df_regs_ever_live_p(regno) &&
       !call_used_or_fixed_reg_p(regno)) {
@@ -326,7 +445,8 @@ nxu16_initial_elimination_offset(int from, int to)
   }*/
   if (i % 2)
     i++;
-
+if(!crtl->is_leaf)
+i+=4;
   switch (from) {
   case ARG_POINTER_REGNUM:
     if (to == STACK_POINTER_REGNUM) {
@@ -334,10 +454,10 @@ nxu16_initial_elimination_offset(int from, int to)
       return (get_frame_size() + (ACCUMULATE_OUTGOING_ARGS ?
           (HOST_WIDE_INT) crtl -> outgoing_args_size :
           0) +
-        i + 4);
+        i );
     } else if (to == HARD_FRAME_POINTER_REGNUM) {
       printf("ARG to FP: %d %d\n", i, ACCUMULATE_OUTGOING_ARGS ? (HOST_WIDE_INT) crtl -> outgoing_args_size : 0); 
-      return (i + 4 + (ACCUMULATE_OUTGOING_ARGS ?
+      return (i  + (ACCUMULATE_OUTGOING_ARGS ?
         (HOST_WIDE_INT) crtl -> outgoing_args_size :
         0));
     }
@@ -404,21 +524,38 @@ nxu16_pass_by_reference(cumulative_args_t,
 return targetm.calls.must_pass_in_stack (arg);
 }
 
+
 static bool
-nxu16_frame_pointer_required (void)
+nxu16_frame_pointer_required(void)
 {
-  /* If the function contains dynamic stack allocations, we need to
-     use the frame pointer to access the static parts of the frame.  */
-  if (cfun->calls_alloca)
-    return true;
-
-  /* In MIPS16 mode, we need a frame pointer for a large frame; otherwise,
-     reload may be unable to compute the address of a local variable,
-     since there is no way to add a large constant to the stack pointer
-     without using a second temporary register.  */
-
-  return false;
+    nxu16_compute_frame();  // Ensure frame info is computed first
+    
+    if (cfun->calls_alloca) {
+        printf("Frame pointer required: calls_alloca=true\n");
+        return true;
+    }
+    
+    /*if (ACCUMULATE_OUTGOING_ARGS) {
+        printf("Frame pointer required: ACCUMULATE_OUTGOING_ARGS=true\n");
+        return true;
+    }*/
+    
+    if (get_frame_size() > 0) {
+        printf("Frame pointer required: frame_size=%d\n", (int)get_frame_size());
+        return true;
+    }
+    
+    if (cfun->machine->size_for_adjusting_sp > 0) {
+        printf("Frame pointer required: size_for_adjusting_sp=%d\n", 
+               (int)cfun->machine->size_for_adjusting_sp);
+        return true;
+    }
+    
+    printf("Frame pointer NOT required\n");
+    return false;
 }
+
+
 static int
 nxu16_num_arg_regs (machine_mode mode, const_tree type)
 {
@@ -508,30 +645,53 @@ nxu16_regno_mode_ok_for_base_p (int regno, machine_mode mode,
   return REGNO_REG_CLASS(regno)==GENERAL_REGS;
 }
 
-
-/* Worker function for TARGET_LEGITIMATE_ADDRESS_P.  */
 static bool//TODO:reject mov bp to 
 nxu16_legitimate_address_p(machine_mode mode ATTRIBUTE_UNUSED,
   rtx x, bool strict_p,
-  addr_space_t as, code_helper = ERROR_MARK) {
-  gcc_assert(ADDR_SPACE_GENERIC_P(as));
-printf("ADDRESS_REG:%d\n",REGNO(x));
-  if (GET_CODE(x) == PLUS)
-    /* && REG_P (XEXP (x, 0)) */
-    /* && nxu16_reg_ok_for_base_p (XEXP (x, 0), strict_p) */
-    /* && CONST_INT_P (XEXP (x, 1)) */
-    /* && IN_RANGE (INTVAL (XEXP (x, 1)), -32768, 32767)) */
-    return true;
+  code_helper = ERROR_MARK) {
+ /* printf("legitimate address\n");
+  debug_rtx(x);*/
+//printf("ADDRESS_REG:%d\n",REGNO(x));
+if (GET_CODE(x) == PLUS) {
+    // Only allow: (PLUS (REG) (CONST_INT))
+    if (REG_P(XEXP(x, 0)) && CONST_INT_P(XEXP(x, 1))) {
+        return true;  // Accept: (plus (reg) (const_int))
+    }
+    // Reject everything else: (plus (plus ...)), (plus (mult ...)), etc.
+    return false;
+}
   if (REG_P(x) && nxu16_regno_mode_ok_for_base_p (REGNO(x),Pmode, strict_p))
     return true;
   if (GET_CODE(x) == SYMBOL_REF ||
     GET_CODE(x) == LABEL_REF ||
     GET_CODE(x) == CONST)
     return true;
+  printf("legitimate false\n");
   return false;
 }
+/* Worker function for TARGET_LEGITIMATE_ADDRESS_P.  */
+static bool//TODO:reject mov bp to 
+nxu16_legitimate_addr_space_address_p(machine_mode mode ATTRIBUTE_UNUSED,
+  rtx x, bool strict_p,
+  addr_space_t as, code_helper = ERROR_MARK) {
+  gcc_assert(ADDR_SPACE_GENERIC_P(as));
+    return nxu16_legitimate_address_p(mode, x, strict_p);
+}
 
-
+static scalar_int_mode
+nxu16_addr_space_pointer_mode (addr_space_t addrspace)
+{
+  switch (addrspace)
+    {
+    default:
+    /*case ADDR_SPACE_GENERIC:
+      return Pmode;*/
+    case ADDR_SPACE_NEAR:
+      return HImode;
+    case ADDR_SPACE_FAR:
+      return PSImode;
+    }
+}
 
 /* Return the fixed registers used for condition codes.  */
 static bool
@@ -700,15 +860,11 @@ nxu16_print_operand(FILE * file, rtx x, int code) {
      modification of the operand, the modified operand should be put in
      "operand", and then do a break to let default handling
      (zero-modifier) output the operand.  */
+  int abcd = 0;
 
-  switch (code) {
-  case 0:
-    /* No code, print as usual.  */
-    break;
-
-  default:
-    LOSE_AND_RETURN("invalid operand modifier letter", x);
-  }
+  if (code >= 'A' && code <= 'D')
+    abcd = code - 'A'+1;
+    //quite unelegant,but avr do this,why  i can have only one code?
 
   /* Print an operand as without a modifier letter.  */
   switch (GET_CODE(operand)) {
@@ -716,7 +872,13 @@ nxu16_print_operand(FILE * file, rtx x, int code) {
   case REG:
     if (REGNO(operand) >= FIRST_PSEUDO_REGISTER)
       internal_error("internal error: bad register: %d", REGNO(operand));
-    fprintf(file, "%s%s", (GET_MODE(operand) == HImode && REGNO(operand) < nxu16_SP) ? "e" : "", reg_names[REGNO(operand)]);
+      if(abcd)
+      fprintf(file, "%s",  reg_names[REGNO(operand)+abcd-1]);//abcd not support er
+      else
+    	fprintf(file, "%s%s", ((REGNO_REG_CLASS(REGNO(operand)) == GENERAL_REGS) ? 
+    ((GET_MODE(operand) == HImode) ? "e" :
+    (GET_MODE(operand) == SImode) ? "x" :
+    (GET_MODE(operand) == DImode) ? "q" : "") : ""), reg_names[REGNO(operand)]);
     return;
 
   case MEM:
@@ -730,7 +892,7 @@ nxu16_print_operand(FILE * file, rtx x, int code) {
       output_addr_const(file, operand);
       return;
     }
-
+debug_rtx(x);
     LOSE_AND_RETURN("unexpected operand", x);
   }
 }
@@ -767,7 +929,8 @@ nxu16_use_lra_p ()
 
 
 /* Elimination */
-
+#undef TARGET_CAN_ELIMINATE
+#define TARGET_CAN_ELIMINATE nxu16_can_eliminate
 
 
 
@@ -801,10 +964,10 @@ nxu16_use_lra_p ()
  * Addressing Modes
  ******************************************************************************/
 
-/* #undef  TARGET_LEGITIMATE_ADDRESS_P */
-/* #define TARGET_LEGITIMATE_ADDRESS_P nxu16_legitimate_address_p */
+#undef  TARGET_LEGITIMATE_ADDRESS_P 
+#define TARGET_LEGITIMATE_ADDRESS_P nxu16_legitimate_address_p 
 #undef TARGET_ADDR_SPACE_LEGITIMATE_ADDRESS_P
-#define TARGET_ADDR_SPACE_LEGITIMATE_ADDRESS_P nxu16_legitimate_address_p
+#define TARGET_ADDR_SPACE_LEGITIMATE_ADDRESS_P nxu16_legitimate_addr_space_address_p
 
 /******************************************************************************
  * Condition Codes
@@ -835,7 +998,10 @@ nxu16_use_lra_p ()
 /******************************************************************************
  * Sections
  ******************************************************************************/
-
+#undef  TARGET_ADDR_SPACE_POINTER_MODE
+#define TARGET_ADDR_SPACE_POINTER_MODE nxu16_addr_space_pointer_mode
+#undef  TARGET_ADDR_SPACE_ADDRESS_MODE
+#define TARGET_ADDR_SPACE_ADDRESS_MODE nxu16_addr_space_pointer_mode
 #undef TARGET_ASM_SELECT_SECTION
 #define TARGET_ASM_SELECT_SECTION default_elf_select_section
 
@@ -849,7 +1015,8 @@ nxu16_use_lra_p ()
 /******************************************************************************
  * Misc.
  ******************************************************************************/
-
+#undef TARGET_FRAME_POINTER_REQUIRED
+#define TARGET_FRAME_POINTER_REQUIRED nxu16_frame_pointer_required
 #undef TARGET_SET_CURRENT_FUNCTION
 #define TARGET_SET_CURRENT_FUNCTION nxu16_set_current_function
 

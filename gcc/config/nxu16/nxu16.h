@@ -65,7 +65,7 @@
    that to impose alignment on the enclosing structure.
    struct s {int a:8}; should have same alignment as "int", not "char".  */
 #define	PCC_BITFIELD_TYPE_MATTERS 1
-
+#define DEFAULT_PCC_STRUCT_RETURN	0
 /* Largest integer machine mode for structures.  If undefined, the default
    is GET_MODE_SIZE(DImode).  */
 #define MAX_FIXED_MODE_SIZE 16
@@ -140,20 +140,29 @@
 #define nxu16_BP  20
 
 
-#define FIRST_PSEUDO_REGISTER 21
+#define FIRST_PSEUDO_REGISTER 38
 
 #define FIXED_REGISTERS                         \
     { 0, 0, 0, 0,  0,0,0,0,0,0,0,0,0,0,0,0     ,                        \
-      1,1,1,1,1                               }
+      1,1,1,1,1,1,\
+      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,                                 }
 
 #define CALL_USED_REGISTERS                     \
     { 1, 1, 1, 1,0,0,0,0,0,0,0,0,0,0,0,0        ,                       \
-      1,1,1,1 ,1                              }//todo:sp?
+      1,1,1,1 ,1 ,1,\
+      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,                             }//todo:sp?
 
 #define REG_ALLOC_ORDER {			\
     0,1,2,3,15,14,13,12,11,10,9,8,7,6,5,4,					\
-    16,17,18,19,20				\
+    16,17,18,19,20,21,\
+    22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37				\
     }
+
+#define REGISTER_NAMES {                        \
+        "r0","r1", "r2","r3","r4","r5", "r6","r7",                 \
+        "r8","r9", "r10","r11 ","r12","r13","r14","r15", "sp",                 \
+        "psw","lr","fp","bp","ea",\
+        "cr0","cr1","cr2","cr3","cr4","cr5","cr6","cr7","cr8","cr9","cr10","cr11","cr12","cr13","cr14","cr15" }
 
 /******************************************************************************
  * Register Classes
@@ -179,11 +188,11 @@ enum reg_class
       "ALL_REGS" }
 
 #define REG_CLASS_CONTENTS \
-{ { 0x00000000 }, /* Empty */			   \
-  { 0x0000FFFF },       \
-  { 0x00060000 }, 	                   \
-  { 0x00020000 }, /* CC */                         \
-  { 0x001FFFFF }  /* All registers */              \
+{ { 0x00000000,0x00000000 }, /* Empty */			   \
+  { 0x0000FFFF,0x00000000 },       \
+  { 0x00060000,0x00000000 }, 	                   \
+  { 0x00020000,0x00000000 }, /* CC */                         \
+  { 0xFFFFFFFF,0x0000003F }  /* All registers */              \
 }
 
 /* A C expression whose value is a register class containing hard
@@ -271,10 +280,10 @@ enum reg_class
 /* Elimination */
 
 #define ELIMINABLE_REGS							\
-{{ ARG_POINTER_REGNUM,   STACK_POINTER_REGNUM},				\
- { ARG_POINTER_REGNUM,   HARD_FRAME_POINTER_REGNUM },				\
- { FRAME_POINTER_REGNUM, STACK_POINTER_REGNUM},				\
- { FRAME_POINTER_REGNUM, HARD_FRAME_POINTER_REGNUM },}				\
+{{ ARG_POINTER_REGNUM,   HARD_FRAME_POINTER_REGNUM },				\
+ { ARG_POINTER_REGNUM,   STACK_POINTER_REGNUM},				\
+ { FRAME_POINTER_REGNUM, HARD_FRAME_POINTER_REGNUM },				\
+ { FRAME_POINTER_REGNUM, STACK_POINTER_REGNUM},}				\
 
 
 /* This macro returns the initial difference between the specified pair
@@ -386,8 +395,14 @@ typedef struct nxu16_args
 #define DATA_SECTION_ASM_OP "\t.data"
 //#define READONLY_DATA_SECTION_ASM_OP "\t.rodata"
 #define BSS_SECTION_ASM_OP "\t.bss"
-
-
+enum
+  {
+    ADDR_SPACE_NEAR, /* ADDR_SPACE_GENERIC */
+    ADDR_SPACE_FAR,
+    /* Sentinel */
+    ADDR_SPACE_COUNT
+  };
+#define REGISTER_TARGET_PRAGMAS() nxu16_register_pragmas()
 /******************************************************************************
  * Assembler Format
  ******************************************************************************/
@@ -404,11 +419,6 @@ typedef struct nxu16_args
 #define GLOBAL_ASM_OP ".global\t"
 
 /* Instruction Output */
-
-#define REGISTER_NAMES {                        \
-        "r0","r1", "r2","r3","r4","r5", "r6","r7",                 \
-        "r8","r9", "r10","r11 ","r12","r13","r14","r15", "sp",                 \
-        "psw","lr","fp","bp" }
 
 /* Alignment Output */
 

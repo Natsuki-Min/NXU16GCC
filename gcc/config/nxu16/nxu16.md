@@ -20,26 +20,10 @@
 ;; -------------------------------------------------------------------------
 ;; nxu16 specific constraints, predicates and attributes
 ;; -------------------------------------------------------------------------
-(define_constants
-  [(REG_0   0)   (REG_1   1)   (REG_2   2)	
-   (REG_8   8)   (REG_9   9)   (REG_10 10)   (REG_11 11)
-   (REG_12 12)   (REG_13 13)   (REG_14 14)   (REG_15 15)
-   (REG_16 16)   (REG_17 17)   (REG_18 18)   (REG_19 19)
-   ])
 
-(define_constants
-  [
-   (REG_SP      16)
-   (REG_CC      17)
-   ])
-(include "constraints.md")
-(include "predicates.md")
-
-(define_mode_iterator QIHI  [QI HI])
+(include "md/definitions.md")
 
 
-; Most instructions are two bytes long.
-(define_attr "length" "" (const_int 2))
 
 ;; -------------------------------------------------------------------------
 ;; nop instruction
@@ -54,54 +38,8 @@
 ;; Arithmetic instructions
 ;; -------------------------------------------------------------------------
 
-;; ADD instruction with split for REG_CC clobber
-(define_insn_and_split "add<mode>3"
-  [(set (match_operand:QIHI 0 "register_operand" "=r,r,SP")
-        (plus:QIHI
-          (match_operand:QIHI 1 "register_operand" "0,0,0")
-          (match_operand:QIHI 2 "general_operand" "r,i,i")))]
-  ""
-  "#"
-  "&& reload_completed"
-  [(parallel [(set (match_dup 0)
-                   (plus:QIHI (match_dup 1) (match_dup 2)))
-              (clobber (reg:CC REG_CC))])]
-)
 
-(define_insn "add<mode>3_clobber"
-  [(set (match_operand:QIHI 0 "register_operand" "=r,r,SP")
-        (plus:QIHI
-          (match_operand:QIHI 1 "register_operand" "0,0,0")
-          (match_operand:QIHI 2 "general_operand" "r,i,i"))
-        )
-   (clobber (reg:CC REG_CC))]
-  "reload_completed"
-  "add %0 %2"
-  [])
 
-;; SUB instruction with split
-(define_insn_and_split "sub<mode>3"
-  [(set (match_operand:QIHI 0 "register_operand" "=r,r")
-        (minus:QIHI
-          (match_operand:QIHI 1 "register_operand" "0,0")
-          (match_operand:QIHI 2 "general_operand" "r,i")))]
-  ""
-  "#"
-  "&& reload_completed"
-  [(parallel [(set (match_dup 0)
-                   (minus:QIHI (match_dup 1) (match_dup 2)))
-              (clobber (reg:CC REG_CC))])]
-)
-
-(define_insn "sub<mode>3_clobber"
-  [(set (match_operand:QIHI 0 "register_operand" "=r,r")
-        (minus:QIHI
-          (match_operand:QIHI 1 "register_operand" "0,0")
-          (match_operand:QIHI 2 "general_operand" "r,i")))
-   (clobber (reg:CC REG_CC))]
-  "reload_completed"
-  "sub %0 %2"
-  [])
 
 ;; MUL instruction with split
 (define_insn_and_split "mul<mode>3"
@@ -212,50 +150,12 @@
 ;; Logical operators
 ;; -------------------------------------------------------------------------
 
-(define_insn "andhi3"
-    [(set (match_operand:HI 0 "register_operand" "=r")
-	  (and:HI (match_operand:HI 1 "register_operand" "0")
-		  (match_operand:HI 2 "register_operand" "r")))]
-                  ""
-                  {
-                  return "and %0 %2";
-                  })
 
-(define_insn "xorhi3"
-    [(set (match_operand:HI 0 "register_operand" "=r")
-	  (xor:HI (match_operand:HI 1 "register_operand" "0")
-		  (match_operand:HI 2 "register_operand" "r")))]
-                  ""
-                  {
-                  return "xor %0 %2";
-                  })
-
-(define_insn "iorhi3"
-    [(set (match_operand:HI 0 "register_operand" "=r")
-	  (ior:HI (match_operand:HI 1 "register_operand" "0")
-		  (match_operand:HI 2 "register_operand" "r")))]
-                  ""
-                  {
-                  return "or %0 %2";
-                  })
 
 ;; -------------------------------------------------------------------------
 ;; Move instructions
 ;; -------------------------------------------------------------------------
 
-(define_insn "pop<mode>1"
-  [(set (match_operand:QIHI 0 "register_operand" "=a")
-        (mem:QIHI (pre_inc:HI (reg:HI REG_SP))))]
-  ""
-  "pop %0"
-  [])
-
-(define_insn "push<mode>1"
-  [(set (mem:QIHI (post_dec:HI (reg:HI REG_SP)))
-        (match_operand:QIHI 0 "register_operand" "a"))]
-  ""
-  "push %0"
- [])
 
 
 
@@ -268,17 +168,23 @@
     rtx dest = operands[0];
     rtx src  = operands[1];
 
-
-    debug_rtx(dest);
-    debug_rtx(src); 
+    if (MEM_P (dest) && MEM_P (src))
+    {
+      rtx reg = gen_reg_rtx (<MODE>mode);
+      emit_move_insn (reg, src);
+      emit_move_insn (dest, reg);
+      DONE;
+    }
+    //debug_rtx(dest);
+    //debug_rtx(src); 
 
     //if (register_operand (dest, <MODE>mode)){
     //  DONE;
     //}
   })
 	  (define_insn_and_split "mov<mode>_insn_split"
-	[(set (match_operand:QIHI 0 "nonimmediate_operand"    "=a,r,r,m")
-	      (match_operand:QIHI 1 "general_operand"          "a,i,m,r"))]
+	[(set (match_operand:QIHI 0 "nonimmediate_operand"    "=YAL,r,r,m")
+	      (match_operand:QIHI 1 "general_operand"          "YAL,i,m,r"))]
   ""
   "#"
   "&& reload_completed"
@@ -288,8 +194,8 @@
 
 ;;TODO: to track register to realize mov er inst(avoid mov hi,0 to many times)
 (define_insn "mov<mode>_insn"
-[(set (match_operand:QIHI 0 "nonimmediate_operand"    "=a,r,r,m")
-      (match_operand:QIHI 1 "general_operand"          "a,i,m,r"));;FIXME:may not have move between sp and cc
+[(set (match_operand:QIHI 0 "nonimmediate_operand"    "=YAL,r,r,m")
+      (match_operand:QIHI 1 "general_operand"          "YAL,i,m,r"));;FIXME:may not have move between sp and cc
       (clobber (reg:CC REG_CC))]
 "reload_completed"
 "@
@@ -400,11 +306,11 @@ st %1 ,%0"
 
 
 
-(define_expand "cbranchhi4"
+(define_expand "cbranch<mode>4"
   [(set (reg:CC REG_CC)
         (compare:CC
-         (match_operand:HI 1 "general_operand" "")
-         (match_operand:HI 2 "general_operand" "")))
+         (match_operand:ALL1234 1 "general_operand" "")
+         (match_operand:ALL1234 2 "general_operand" "")))
    (set (pc)
         (if_then_else (match_operator 0 "comparison_operator"
                        [(reg:CC REG_CC) (const_int 0)])
@@ -414,16 +320,14 @@ st %1 ,%0"
   "
   /* Force the compare operands into registers.  */
   if (GET_CODE (operands[1]) != REG)
-	operands[1] = force_reg (HImode, operands[1]);
-  if (GET_CODE (operands[2]) != REG)
-	operands[2] = force_reg (HImode, operands[2]);
+	operands[1] = force_reg (GET_MODE(operands[1]), operands[1]);
   ")
 
-(define_insn "*cmphi"
+(define_insn "*cmp<mode>"
   [(set (reg:CC REG_CC)
 	(compare
-	 (match_operand:HI 0 "register_operand" "r")
-	 (match_operand:HI 1 "register_operand"	"r")))]
+	 (match_operand:ALL1234 0 "register_operand" "r,r")
+	 (match_operand:ALL1234 1 "nonmemory_operand"	"r,i")))]
   ""
   "cmp %0 %1")
 
@@ -483,22 +387,26 @@ st %1 ,%0"
 ;; -------------------------------------------------------------------------
 
 (define_c_enum "unspecv" [
-  UNSPECV_RTI
-  UNSPECV_SWI
+  UNSPECV_IRET
+  UNSPECV_STI
+  UNSPECV_CLI
   ])
 
-(define_insn "rti"
+(define_insn "iret"
     [(return)
-    (unspec_volatile [(const_int 0)] UNSPECV_RTI)]
+    (unspec_volatile [(const_int 0)] UNSPECV_IRET)]
     ""
     "iret")
 
-(define_insn "swi"
-    [(unspec_volatile [(const_int 0)] UNSPECV_SWI)]
+(define_insn "sti"
+    [(unspec_volatile [(const_int 0)] UNSPECV_STI)]
     ""
-    "swi")
+    "sti")
 
-
+(define_insn "cli"
+    [(unspec_volatile [(const_int 0)] UNSPECV_CLI)]
+    ""
+    "cli")
 
 ;; Local Variables:
 ;; mode: lisp
