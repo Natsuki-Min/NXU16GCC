@@ -1,0 +1,25 @@
+/* Use CC_V to test only the overflow flag:
+   LTU -- V is 0
+   GEU -- V is 1.  */
+
+CC_MODE (CC_V);
+
+/* CC_UI represents unsigned inequality using only the carry flag.
+   LTU -- C is 0.
+   GEU -- C is 1.  */
+
+CC_MODE (CC_UI);
+
+/* CC_C represents carry-in/out, also using the carry flag.
+   EQ -- C is 0.
+   NE -- C is 1.  */
+
+CC_MODE (CC_C);
+
+/* CC_NZ codes:
+   EQ -- Z is 0
+   NE -- Z is 1
+   GE -- N is 0
+   LT -- N is 1.  */
+
+CC_MODE (CC_NZ);

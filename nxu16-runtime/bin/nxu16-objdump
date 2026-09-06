@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+runtime_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+workspace=$(CDPATH= cd -- "$runtime_dir/../.." && pwd)
+exec "${NXU16_OBJDUMP:-$workspace/NXU16GNUbinutils/build-codex/binutils/objdump}" "$@"
+

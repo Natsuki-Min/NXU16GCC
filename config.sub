@@ -1185,6 +1185,7 @@ case $cpu-$vendor in
 			| arc | arceb | arc32 | arc64 \
 			| arm | arm[lb]e | arme[lb] | armv* \
 			| avr | avr32 \
+			| nxu16 \
 			| asmjs \
 			| ba \
 			| be32 | be64 \

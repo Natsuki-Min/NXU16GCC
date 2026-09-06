@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+runtime_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+workspace=$(CDPATH= cd -- "$runtime_dir/../.." && pwd)
+compiler=${NXU16_CC:-"$workspace/gcc/build-codex/gcc/xgcc"}
+compiler_dir=${NXU16_GCC_BDIR:-"$workspace/gcc/build-codex/gcc"}
+
+if [ ! -x "$compiler" ]; then
+  echo "nxu16-picolibc-gcc: compiler not found: $compiler" >&2
+  exit 1
+fi
+
+# This wrapper is intentionally independent of the runtime sysroot: it is used
+# to bootstrap the libc which will populate that sysroot.
+exec "$compiler" -B"$compiler_dir/" -nostdlib "$@"

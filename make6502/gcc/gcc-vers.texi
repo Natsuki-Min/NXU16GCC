@@ -1,0 +1,5 @@
+@set version-GCC 15.0.0
+@set DEVELOPMENT
+@set srcdir /home/kali/gcc/make6502/gcc/../../gcc
+@set VERSION_PACKAGE (GCC) 
+@set BUGURL @uref{https://gcc.gnu.org/bugs/}

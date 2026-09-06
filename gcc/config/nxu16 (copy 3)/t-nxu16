@@ -1,0 +1,139 @@
+# Copyright (C) 2000-2024 Free Software Foundation, Inc.
+#
+# This file is part of GCC.
+#
+# GCC is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3, or (at your option)
+# any later version.
+#
+# GCC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GCC; see the file COPYING3.  If not see
+# <http://www.gnu.org/licenses/>.
+
+HAVE_DOUBLE32 = $(findstring HAVE_DOUBLE32, $(tm_defines))
+HAVE_DOUBLE64 = $(findstring HAVE_DOUBLE64, $(tm_defines))
+HAVE_LONG_DOUBLE32 = $(findstring HAVE_LONG_DOUBLE32, $(tm_defines))
+HAVE_LONG_DOUBLE64 = $(findstring HAVE_LONG_DOUBLE64, $(tm_defines))
+HAVE_LONG_DOUBLE_IS_DOUBLE = $(findstring HAVE_LONG_DOUBLE_IS_DOUBLE, $(tm_defines))
+
+ifeq (WITH_DOUBLE32, $(findstring WITH_DOUBLE32, $(tm_defines)))
+WITH_DOUBLE=32
+endif
+
+ifeq (WITH_DOUBLE64, $(findstring WITH_DOUBLE64, $(tm_defines)))
+WITH_DOUBLE=64
+endif
+
+ifeq (WITH_LONG_DOUBLE32, $(findstring WITH_LONG_DOUBLE32, $(tm_defines)))
+WITH_LONG_DOUBLE=32
+endif
+
+ifeq (WITH_LONG_DOUBLE64, $(findstring WITH_LONG_DOUBLE64, $(tm_defines)))
+WITH_LONG_DOUBLE=64
+endif
+
+PASSES_EXTRA += $(srcdir)/config/nxu16/nxu16-passes.def
+
+driver-nxu16.o: $(srcdir)/config/nxu16/driver-nxu16.cc \
+  $(CONFIG_H) $(SYSTEM_H) coretypes.h \
+  $(srcdir)/config/nxu16/nxu16-arch.h $(TM_H)
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
+
+nxu16-devices.o: $(srcdir)/config/nxu16/nxu16-devices.cc \
+  $(srcdir)/config/nxu16/nxu16-mcus.def \
+  $(srcdir)/config/nxu16/nxu16-arch.h \
+  $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H)
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
+
+nxu16-c.o: $(srcdir)/config/nxu16/nxu16-c.cc \
+  $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) $(TREE_H) $(C_COMMON_H)
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
+
+nxu16-log.o: $(srcdir)/config/nxu16/nxu16-log.cc \
+  $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) $(TREE_H) $(INPUT_H) dumpfile.h
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
+
+nxu16-passes.o: $(srcdir)/config/nxu16/nxu16-passes.cc \
+  $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) $(TREE_H) $(INPUT_H)
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
+
+nxu16.o nxu16-c.o: $(srcdir)/config/nxu16/builtins.def
+
+nxu16-passes.o: $(srcdir)/config/nxu16/ranges.h
+
+# This overrides stdfix.h from USER_H which we supply and include
+# in our own stdfix.h as stdfix-gcc.h.
+
+EXTRA_HEADERS = $(srcdir)/config/nxu16/stdfix.h \
+	      	stdfix-gcc.h
+
+stdfix-gcc.h: $(srcdir)/ginclude/stdfix.h
+	-cp $< $@
+
+# Files and Variables auto-generated from nxu16-mcus.def
+
+nxu16_MCUS = $(srcdir)/config/nxu16/nxu16-mcus.def
+
+# Run `nxu16-mcus' after you changed or added devices in  nxu16-mcus.def
+
+.PHONY: nxu16-mcus
+
+nxu16-mcus: $(srcdir)/doc/nxu16-mmcu.texi ; @true
+
+# Make sure that native -mmcu= support is in sync with -mmcu= documentation.
+gen-nxu16-mmcu-texi$(build_exeext): $(srcdir)/config/nxu16/gen-nxu16-mmcu-texi.cc \
+  $(nxu16_MCUS) $(srcdir)/config/nxu16/nxu16-devices.cc \
+  $(srcdir)/config/nxu16/nxu16-arch.h
+	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) $< -o $@
+
+gen-nxu16-mmcu-specs$(build_exeext): $(srcdir)/config/nxu16/gen-nxu16-mmcu-specs.cc \
+  $(nxu16_MCUS) $(srcdir)/config/nxu16/nxu16-devices.cc \
+  $(srcdir)/config/nxu16/nxu16-arch.h $(TM_H)
+	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) $< -o $@ $(INCLUDES)
+
+$(srcdir)/doc/nxu16-mmcu.texi: gen-nxu16-mmcu-texi$(build_exeext)
+	$(RUN_GEN) ./$< > $@
+
+s-device-specs: gen-nxu16-mmcu-specs$(build_exeext)
+	rm -rf device-specs
+	mkdir device-specs && cd device-specs && $(RUN_GEN) ../$<
+	$(STAMP) s-device-specs
+
+GCC_PASSES+=s-device-specs
+
+install-driver: install-device-specs
+
+install-device-specs: s-device-specs installdirs
+	-rm -rf $(DESTDIR)$(libsubdir)/device-specs
+	mkdir $(DESTDIR)$(libsubdir)/device-specs
+	-for file in device-specs/*; do \
+		$(INSTALL_DATA) $${file} $(DESTDIR)$(libsubdir)/$${file}; \
+	done
+
+# Get multilib layout
+# MULTILIB_OPTIONS
+# MULTILIB_DIRNAMES
+# MULTILIB_REQUIRED
+# MULTILIB_REUSE
+
+multilib.h Makefile s-mlib: t-multilib-nxu16
+
+t-multilib-nxu16: $(srcdir)/config/nxu16/genmultilib.awk \
+				 $(nxu16_MCUS)
+	$(AWK)	-v HAVE_LONG_DOUBLE_IS_DOUBLE=$(HAVE_LONG_DOUBLE_IS_DOUBLE) \
+		-v HAVE_DOUBLE32=$(HAVE_DOUBLE32) 			\
+		-v HAVE_DOUBLE64=$(HAVE_DOUBLE64) 			\
+		-v HAVE_LONG_DOUBLE32=$(HAVE_LONG_DOUBLE32)		\
+		-v HAVE_LONG_DOUBLE64=$(HAVE_LONG_DOUBLE64) 		\
+		-v with_double=$(WITH_DOUBLE) 				\
+		-v with_long_double=$(WITH_LONG_DOUBLE)			\
+		-v with_multilib_list=$(TM_MULTILIB_CONFIG)		\
+		-f $< $< $(nxu16_MCUS) > $@
+
+include t-multilib-nxu16

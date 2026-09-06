@@ -1,0 +1,33 @@
+lang.all.cross:  c.all.cross c++.all.cross
+lang.start.encap:  c.start.encap c++.start.encap
+lang.rest.encap:  c.rest.encap c++.rest.encap
+lang.tags:  c.tags c++.tags
+lang.install-common:  c.install-common c++.install-common
+lang.install-man:  c.install-man c++.install-man
+lang.install-info:  c.install-info c++.install-info
+lang.install-dvi:  c.install-dvi c++.install-dvi
+lang.install-pdf:  c.install-pdf c++.install-pdf
+lang.install-html:  c.install-html c++.install-html
+lang.dvi:  c.dvi c++.dvi
+lang.pdf:  c.pdf c++.pdf
+lang.html:  c.html c++.html
+lang.uninstall:  c.uninstall c++.uninstall
+lang.info:  c.info c++.info
+lang.man:  c.man c++.man
+lang.srcextra:  c.srcextra c++.srcextra
+lang.srcman:  c.srcman c++.srcman
+lang.srcinfo:  c.srcinfo c++.srcinfo
+lang.mostlyclean:  c.mostlyclean c++.mostlyclean
+lang.clean:  c.clean c++.clean
+lang.distclean:  c.distclean c++.distclean
+lang.maintainer-clean:  c.maintainer-clean c++.maintainer-clean
+lang.install-plugin:  c.install-plugin c++.install-plugin
+ifeq ($(DO_LINK_SERIALIZATION),)
+SERIAL_LIST =
+else
+SERIAL_LIST = $(wordlist $(DO_LINK_SERIALIZATION),1, c)
+endif
+SERIAL_COUNT = 2
+INDEX.c = 0
+c++.prev = $(if $(word 1,$(SERIAL_LIST)),$($(word 1,$(SERIAL_LIST)).serial))
+INDEX.c++ = 1

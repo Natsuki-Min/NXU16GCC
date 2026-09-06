@@ -1,0 +1,8 @@
+*startfile:
+%{!shared:crt0%O%s}
+
+*lib:
+%{!shared:--start-group -lc -lnxu16 --end-group}
+
+*link:
+%{!T*:-T nxu16-classwiz.ld%s}

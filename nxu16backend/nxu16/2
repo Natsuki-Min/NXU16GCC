@@ -1,0 +1,86 @@
+(define_constants
+  [(SP_REG	    18)
+  ]
+)
+
+(define_insn "movqi"
+  [(set (match_operand:QI 0 "nonimmediate_operand" "=r,r")
+	(match_operand:QI 1 "general_operand"      "r,i"))]
+  ""
+  "mov %0,%1"
+)
+
+(define_insn "pushqi"
+  [(set (mem:QI (post_dec:HI (reg:HI SP_REG)))
+        (match_operand:QI 0 "nonimmediate_operand" "r"))]
+  ""
+  "push %0"
+)
+
+(define_insn "popqi"
+  [(set (match_operand:QI 0 "nonimmediate_operand" "=r")
+  	(mem:QI (post_inc:HI (reg:HI SP_REG)))        )]
+  ""
+  "push %0"
+)
+
+(define_insn "addqi3"
+  [(set (match_operand:HI 0 "register_operand"		"=r")
+	(plus:QI (match_operand:QI 1 "register_operand"	"%0")
+		 (match_operand:QI 2 "general_operand"	" m")))]
+  ""
+  "add %0,%2")
+
+(define_insn "subhi3"
+  [(set (match_operand:HI 0 "register_operand"		 "=A")
+	(minus:HI (match_operand:HI 1 "register_operand" " 0")
+		  (match_operand:HI 2 "memory_operand"	 " m")))]
+  ""
+  "sec\;sbc %2")
+
+(define_insn "andhi3"
+  [(set (match_operand:HI 0 "register_operand"		"=A")
+	(and:HI (match_operand:HI 1 "register_operand"	" 0")
+		(match_operand:HI 2 "memory_operand"	" m")))]
+  ""
+  "and %2")
+
+(define_insn "iorhi3"
+  [(set (match_operand:HI 0 "register_operand"		"=A")
+	(ior:HI (match_operand:HI 1 "register_operand"	" 0")
+		(match_operand:HI 2 "memory_operand"	" m")))]
+  ""
+  "ora %2")
+
+(define_insn "xorhi3"
+  [(set (match_operand:HI 0 "register_operand"		"=A")
+	(xor:HI (match_operand:HI 1 "register_operand"	" 0")
+		(match_operand:HI 2 "memory_operand"	" m")))]
+  ""
+  "eor %2")
+
+(define_insn "ashlhi3"
+  [(set (match_operand:HI 0 "register_operand"		  "=A")
+	(ashift:HI (match_operand:HI 1 "register_operand" " 0")
+		   (const_int 1)))]
+  ""
+  "asl")
+
+(define_insn "lshrhi3"
+  [(set (match_operand:HI 0 "register_operand"		    "=A")
+	(ashiftrt:HI (match_operand:HI 1 "register_operand" " 0")
+		     (const_int 1)))]
+  ""
+  "lsr")
+
+(define_insn "one_cmplhi2"
+  [(set (match_operand:HI 0 "register_operand"		  "=A")
+	(match_operand:HI 1 "register_operand"		  " 0"))]
+  ""
+  "eor #$ffff")
+
+(define_insn "nop"
+  [(const_int 0)]
+  ""
+  "nop"
+)

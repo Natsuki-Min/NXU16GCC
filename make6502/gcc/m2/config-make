@@ -1,0 +1,10 @@
+# Target libraries are put under this directory:
+TARGET_SUBDIR = 6502
+# Python3 executable name if it exists
+PYTHON = python3
+# Does Python3 exist?  (yes/no).
+HAVE_PYTHON = yes
+# target cpu
+TEST_TARGET_CPU_DEFAULT = 6502-unknown-none
+# host cpu
+TEST_HOST_CPU_DEFAULT = x86_64-pc-linux-gnu

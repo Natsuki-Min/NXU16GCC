@@ -2712,7 +2712,7 @@ if test "${enable_gcov+set}" = set; then :
   enableval=$enable_gcov;
 else
   case $target in
-       bpf-*-*)
+       bpf-*-* | nxu16 | nxu16-*-*)
          enable_gcov=no
        ;;
        *)
@@ -7105,4 +7105,3 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-

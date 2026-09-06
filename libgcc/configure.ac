@@ -161,7 +161,7 @@ GCC_TOPLEV_SUBDIRS
 AC_ARG_ENABLE(gcov,
 [  --disable-gcov          don't provide libgcov and related host tools],
 [], [case $target in
-       bpf-*-*)
+       bpf-*-* | nxu16 | nxu16-*-*)
          enable_gcov=no
        ;;
        *)

@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+
+runtime_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+workspace=$(CDPATH= cd -- "$runtime_dir/../.." && pwd)
+compiler=${NXU16_CC:-"$workspace/gcc/build-codex/gcc/xgcc"}
+compiler_dir=${NXU16_GCC_BDIR:-"$workspace/gcc/build-codex/gcc"}
+sysroot=${NXU16_SYSROOT:-"$compiler_dir/../sysroot"}
+
+if [ ! -x "$compiler" ]; then
+  echo "nxu16-gcc: compiler not found: $compiler" >&2
+  echo "Build GCC first or set NXU16_CC and NXU16_GCC_BDIR." >&2
+  exit 1
+fi
+if [ ! -f "$sysroot/lib/libc.a" ]; then
+  echo "nxu16-gcc: runtime sysroot not built: $sysroot" >&2
+  echo "Run 'make -C $runtime_dir' first." >&2
+  exit 1
+fi
+
+exec "$compiler" -B"$compiler_dir/" \
+  --sysroot="$sysroot" \
+  -isystem "$sysroot/include" \
+  -B"$sysroot/lib/" \
+  -L"$sysroot/lib" \
+  -specs="$sysroot/lib/nxu16.specs" \
+  -fno-asynchronous-unwind-tables -fno-unwind-tables \
+  "$@"

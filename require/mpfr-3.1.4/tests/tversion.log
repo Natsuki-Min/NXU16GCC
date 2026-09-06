@@ -1,0 +1,8 @@
+[tversion] MPFR 3.1.4
+[tversion] Compiler: GCC 12.2.0
+[tversion] GMP: header 6.1.0, library 6.1.0
+[tversion] TLS = yes, decimal = no, GMP internals = no
+[tversion] intmax_t = yes, printf = yes
+[tversion] gmp_printf: hhd = yes, lld = yes, jd = yes, td = yes, Ld = yes
+[tversion] MPFR tuning parameters from default
+PASS tversion (exit status: 0)

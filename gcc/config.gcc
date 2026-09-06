@@ -340,6 +340,11 @@ tm_p_file=
 cpu_type=`echo ${target} | sed 's/-.*$//'`
 cpu_is_64bit=
 case ${target} in
+nxu16-*-*)
+	cpu_type=nxu16
+	c_target_objs="nxu16-c.o"
+	cxx_target_objs="nxu16-c.o"
+	;;
 m32c*-*-*)
         cpu_type=m32c
 	tmake_file=m32c/t-m32c
@@ -1187,6 +1192,16 @@ case ${target} in
 esac
 
 case ${target} in
+nxu16-*-*)
+	###tm_file="elfos.h nxu16/elf.h nxu16/nxu16-arch.h nxu16/nxu16.h nxu16/specs.h nxu16/nxu16-stdint.h"
+	tm_file="elfos.h nxu16/elf.h nxu16/nxu16.h nxu16/nxu16-stdint.h"
+
+	use_gcc_stdint=wrap
+	tmake_file="nxu16/t-nxu16"
+	extra_gcc_objs="driver-nxu16.o"
+	###extra_gcc_objs="driver-nxu16.o nxu16-devices.o"
+	###extra_objs="nxu16-devices.o nxu16-log.o nxu16-passes.o"
+	;;
 aarch64*-*-elf | aarch64*-*-fuchsia* | aarch64*-*-rtems*)
 	tm_file="${tm_file} elfos.h newlib-stdint.h"
 	tm_file="${tm_file} aarch64/aarch64-elf.h aarch64/aarch64-errata.h aarch64/aarch64-elf-raw.h"
@@ -4260,6 +4275,9 @@ fi
 
 supported_defaults=
 case "${target}" in
+	nxu16-*-*)
+		supported_defaults="cpu"
+		;;
 	aarch64*-*-*)
 		supported_defaults="abi cpu cpu_64 arch arch_64 tune tune_64"
 		if test x$with_cpu_64 != x && test x$with_cpu = x; then

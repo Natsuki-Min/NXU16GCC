@@ -1,0 +1,6 @@
+driver-nxu16.o: $(srcdir)/config/nxu16/driver-nxu16.c \
+  $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H)
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<
+nxu16-c.o: $(srcdir)/config/nxu16/nxu16-c.cc \
+  $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) $(TREE_H) $(C_COMMON_H)
+	$(COMPILER) -c $(ALL_COMPILERFLAGS) $(ALL_CPPFLAGS) $(INCLUDES) $<

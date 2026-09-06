@@ -1567,6 +1567,11 @@ am33_2.0-*-linux*)
 m32c-*-elf*)
 	tmake_file="$tmake_file m32c/t-m32c"
  	;;
+nxu16-*-*)
+	# Start with ABI-sized target helpers.  Wider integer, floating-point and
+	# unwind routines must be added as those machine modes are validated.
+	tmake_file="$tmake_file nxu16/t-nxu16"
+	;;
 nvptx-*)
 	tmake_file="$tmake_file nvptx/t-nvptx"
 	extra_parts="crt0.o"

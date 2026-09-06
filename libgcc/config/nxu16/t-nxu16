@@ -1,0 +1,30 @@
+# The generic libgcc2 build is configured for SI/DI modes.  The compiler's
+# native integer mode is HI, so build the corresponding integer helpers from
+# a target-specific, freestanding implementation as well.
+LIB2ADD += $(srcdir)/config/nxu16/lib2funcs.c \
+	$(srcdir)/config/nxu16/lib2funcs-si.c \
+	$(srcdir)/config/nxu16/lib2wide.c \
+	$(srcdir)/config/nxu16/lib2float.c \
+	$(srcdir)/config/nxu16/lib2double.c \
+	$(srcdir)/config/nxu16/lib2shift.asm \
+	$(srcdir)/config/nxu16/indirect-call.asm
+
+# libgcc2 assumes a target with a native SI word and consequently builds many
+# SI/DI routines that this byte-word backend cannot yet lower correctly.
+# Start with the ABI-sized helpers supplied above; add wider routines back as
+# their corresponding machine modes and calling convention are validated.
+LIB2FUNCS_EXCLUDE := %
+
+# Exception unwinding needs a proven frame layout and CFI implementation.
+# Keep emulated TLS (added later by the common Makefile), but do not build the
+# generic DWARF/SJLJ unwinders for this still-freestanding target.
+LIB2ADDEH :=
+LIB2ADDEHSTATIC :=
+LIB2ADDEHSHARED :=
+disable_emutls := yes
+
+# The backend does not yet emit complete frame-related RTL notes.  Asking the
+# DWARF CFI pass to describe multiword libgcc routines therefore triggers an
+# ICE.  Keep the freestanding runtime usable without pretending that target
+# exception unwinding is supported.
+HOST_LIBGCC2_CFLAGS += -g0 -fno-asynchronous-unwind-tables -fno-unwind-tables

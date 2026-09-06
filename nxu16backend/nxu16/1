@@ -1,0 +1,241 @@
+(include "constraints.md")
+(include "predicates.md")
+
+(define_insn "nop"
+[(const_int 0)]
+""
+"nop")
+
+;;-----------------------------------
+
+
+(define_insn "addqi2"
+[(set (match_operand:QI 0 "register_operand" "=r,r")
+(plus:QI
+(match_operand:QI 1 "register_operand" "0,0")
+(match_operand:QI 2 "nonmemory_operand" "i,r")))]
+""
+"add %0 ,%2"
+[])
+
+(define_insn "subqi2"
+[(set (match_operand:QI 0 "register_operand" "=r,r")
+(minus:QI
+(match_operand:QI 1 "register_operand" "0,0")
+(match_operand:QI 2 "nonmemory_operand" "i,r")))]
+""
+"sub %0 ,%2"
+[])
+
+(define_insn "ashlqi2"
+[(set (match_operand:QI 0 "register_operand" "=r")
+(ashift:QI
+(match_operand:QI 1 "register_operand" "0")
+(match_operand:QI 2 "register_operand" "r")))]
+""
+"sll %0 ,%2")
+
+(define_insn "ashrqi2"
+[(set (match_operand:QI 0 "register_operand" "=r")
+(ashiftrt:QI
+(match_operand:QI 1 "register_operand" "0")
+(match_operand:QI 2 "register_operand" "r")))]
+""
+"srl %0 ,%2")
+
+(define_insn "one_cmplqi"
+[(set (match_operand:QI 0 "register_operand" "=r")
+(not:QI (match_operand:QI 1 "register_operand" "0")))]
+""
+"not %0")
+
+
+(define_insn "andqi2"
+[(set (match_operand:QI 0 "register_operand" "=r")
+(and:QI (match_operand:QI 1 "register_operand" "0")
+(match_operand:QI 2 "register_operand" "r")))]
+""
+"and %0 ,%2")
+
+(define_insn "xorqi2"
+[(set (match_operand:QI 0 "register_operand" "=r")
+(xor:QI (match_operand:QI 1 "register_operand" "0")
+(match_operand:QI 2 "register_operand" "r")))]
+""
+"xor %0 ,%2")
+
+(define_insn "iorqi2"
+[(set (match_operand:QI 0 "register_operand" "=r")
+(ior:QI (match_operand:QI 1 "register_operand" "0")
+(match_operand:QI 2 "register_operand" "r")))]
+""
+"or %0 ,%2")
+
+;; ---------------------------
+
+(define_insn "pushqi"
+[(set (mem:QI (pre_dec:HI (reg:HI 1)))
+(match_operand:QI 0 "register_operand" "r"))]
+""
+"push %0")
+
+(define_insn "popqi"
+[(set (match_operand:QI 1 "register_operand" "=r")
+(mem:QI (post_inc:HI (match_operand:HI 0 "register_operand" "r"))))]
+""
+"pop %1")
+
+(define_expand "movhi"
+[(set (match_operand:HI 0 "nonimmediate_operand" "")
+(match_operand:HI 1 "mrmr16_general_movsrc_operand" ""))]
+""
+"")
+(define_insn "movhi_internal"
+[(set (match_operand:HI 0 "nonimmediate_operand" "=r,r,r,r,W")
+(match_operand:HI 1 "mrmr16_general_movsrc_operand" "r,i,Y,W,r"))]
+""
+"@
+mov\t%0 %1
+ldi\t%0 %1
+ldi\t%0 %1
+ld\t%0 %1
+st\t%0 %1"
+[(set_attr "length" "2,4,4,2,2")])
+(define_split
+[(set (match_operand:HI 0 "nonimmediate_operand" "")
+(match_operand:HI 1 "mrmr16_general_movsrc_operand" ""))]
+"
+((GET_CODE (operands[0]) == MEM) && (GET_CODE (XEXP (operands[0], 0)) == SYMBOL_REF)) ||
+((GET_CODE (operands[1]) == MEM) && (GET_CODE (XEXP (operands[1], 0)) == SYMBOL_REF)) ||
+((GET_CODE (operands[0]) == MEM) && (GET_CODE (XEXP (operands[0], 0)) == CONST)) ||
+((GET_CODE (operands[1]) == MEM) && (GET_CODE (XEXP (operands[1], 0)) == CONST))
+"
+[(const_int 0)]
+{
+mrmr16_split_symbolic_move (operands[0], operands[1]);
+DONE;
+})
+;; -------------------------------------------------------------------------
+;; Call and Jump instructions
+;; -------------------------------------------------------------------------
+(define_expand "call"
+[(call (match_operand:HI 0 "memory_operand" "")
+(match_operand 1 "general_operand" ""))]
+""
+{
+gcc_assert (MEM_P (operands[0]));
+})
+(define_insn "*call"
+[(call (mem:HI (match_operand:HI
+0 "nonmemory_operand" "i,r"))
+(match_operand 1 "" ""))]
+""
+"@
+call\t%0
+callr\t%0"
+[(set_attr "length"	"4,2")])
+(define_insn "indirect_jump"
+[(set (pc) (match_operand:HI 0 "nonimmediate_operand" "r"))]
+""
+"jmpr\t%0")
+(define_insn "jump"
+[(set (pc) (label_ref (match_operand 0 "" "")))]
+""
+"jmp\t%l0")
+;; -------------------------------------------------------------------------
+;; Compare instructions
+;; -------------------------------------------------------------------------
+(define_constants
+[(CC_REG 11)])
+(define_expand "cbranchhi4"
+[(set (reg:CC CC_REG)
+(compare:CC
+(match_operand:HI 1 "general_operand" "")
+(match_operand:HI 2 "general_operand" "")))
+(set (pc)
+(if_then_else (match_operator 0 "comparison_operator"
+[(reg:CC CC_REG) (const_int 0)])
+(label_ref (match_operand 3 "" ""))
+(pc)))]
+""
+"
+/* Force the compare operands into registers.  */
+if (GET_CODE (operands[1]) != REG)
+operands[1] = force_reg (HImode, operands[1]);
+if (GET_CODE (operands[2]) != REG)
+operands[2] = force_reg (HImode, operands[2]);
+")
+(define_insn "*cmphi"
+[(set (reg:CC CC_REG)
+(compare
+(match_operand:HI 0 "register_operand" "r")
+(match_operand:HI 1 "register_operand"	"r")))]
+""
+"cmp\t%0 %1")
+;; -------------------------------------------------------------------------
+;; Branch instructions
+;; -------------------------------------------------------------------------
+(define_code_iterator cond [ne eq lt ltu gt gtu ge le geu leu])
+(define_code_attr CC [(ne "ne") (eq "eq") (lt "lt") (ltu "ltu")
+(gt "gt") (gtu "gtu") (ge "ge") (le "le")
+(geu "geu") (leu "leu") ])
+(define_insn "*bcond:code"
+[(set (pc)
+(if_then_else (cond (reg:CC CC_REG)
+(const_int 0))
+(label_ref (match_operand 0 "" ""))
+(pc)))]
+""
+{
+return "b\t%l0";
+})
+;; -------------------------------------------------------------------------
+;; Prologue & Epilogue
+;; -------------------------------------------------------------------------
+(define_expand "prologue"
+[(clobber (const_int 0))]
+""
+"
+{
+mrmr16_expand_prologue ();
+DONE;
+}
+")
+(define_expand "epilogue"
+[(return)]
+""
+"
+{
+mrmr16_expand_epilogue ();
+DONE;
+}
+")
+(define_insn "ret"
+[(return)]
+"reload_completed"
+"ret")
+;; -------------------------------------------------------------------------
+;; Interrupt related instructions
+;; -------------------------------------------------------------------------
+(define_c_enum "unspecv" [
+UNSPECV_IRET
+UNSPECV_STI
+UNSPECV_CLI
+])
+(define_insn "iret"
+[(return)
+(unspec_volatile [(const_int 0)] UNSPECV_IRET)]
+""
+"iret")
+(define_insn "sti"
+[(unspec_volatile [(const_int 0)] UNSPECV_STI)]
+""
+"sti")
+(define_insn "cli"
+[(unspec_volatile [(const_int 0)] UNSPECV_CLI)]
+""
+"cli")
+;; Local Variables:
+;; mode: lisp
+;; indent-tabs-mode: t
+;; End:

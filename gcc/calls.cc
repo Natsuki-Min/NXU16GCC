@@ -288,17 +288,32 @@ prepare_call_address (tree fndecl_or_type, rtx funexp, rtx static_chain_value,
 
       /* If we are using registers for parameters, force the
 	 function address into a register now.  */
-      funexp = ((reg_parm_seen
-		 && targetm.small_register_classes_for_mode_p (FUNCTION_MODE))
-		 ? force_not_mem (memory_address (FUNCTION_MODE, funexp))
-		 : memory_address (FUNCTION_MODE, funexp));
+      /* Some targets use a wider mode for code pointers than for ordinary
+	 data addresses.  Preserve an already-legitimate FUNCTION_MODE address
+	 instead of forcing it through the generic address mode and truncating
+	 it.  */
+      if (GET_MODE (funexp) == FUNCTION_MODE)
+	{
+	  /* A loaded code pointer is commonly still a MEM here.  Load it in
+	     FUNCTION_MODE before asking the generic address machinery to
+	     canonicalize it in Pmode, which may be narrower.  */
+	  if (!targetm.addr_space.legitimate_address_p
+		 (FUNCTION_MODE, funexp, false, ADDR_SPACE_GENERIC,
+		  ERROR_MARK))
+	    funexp = force_not_mem (funexp);
+	}
+      else
+	funexp = memory_address (FUNCTION_MODE, funexp);
+      if (reg_parm_seen
+	  && targetm.small_register_classes_for_mode_p (FUNCTION_MODE))
+	funexp = force_not_mem (funexp);
     }
   else
     {
       /* funexp could be a SYMBOL_REF represents a function pointer which is
 	 of ptr_mode.  In this case, it should be converted into address mode
 	 to be a valid address for memory rtx pattern.  See PR 64971.  */
-      if (GET_MODE (funexp) != Pmode)
+      if (GET_MODE (funexp) != Pmode && GET_MODE (funexp) != FUNCTION_MODE)
 	funexp = convert_memory_address (Pmode, funexp);
 
       if (!(flags & ECF_SIBCALL))
@@ -402,7 +417,17 @@ emit_call_1 (rtx funexp, tree fntree ATTRIBUTE_UNUSED, tree fndecl ATTRIBUTE_UNU
      and we don't want to load it into a register as an optimization,
      because prepare_call_address already did it if it should be done.  */
   if (GET_CODE (funexp) != SYMBOL_REF)
-    funexp = memory_address (FUNCTION_MODE, funexp);
+    {
+      if (GET_MODE (funexp) == FUNCTION_MODE)
+	{
+	  if (!targetm.addr_space.legitimate_address_p
+		 (FUNCTION_MODE, funexp, false, ADDR_SPACE_GENERIC,
+		  ERROR_MARK))
+	    funexp = force_not_mem (funexp);
+	}
+      else
+	funexp = memory_address (FUNCTION_MODE, funexp);
+    }
 
   funmem = gen_rtx_MEM (FUNCTION_MODE, funexp);
   if (fndecl && TREE_CODE (fndecl) == FUNCTION_DECL)
